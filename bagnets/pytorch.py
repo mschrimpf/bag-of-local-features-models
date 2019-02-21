@@ -60,6 +60,16 @@ class Bottleneck(nn.Module):
         return out
 
 
+class Identity(nn.Module):
+    """
+    Helper module that stores the current tensor. Useful for accessing by name
+    Borrowed from https://github.com/dicarlolab/CORnet
+    """
+
+    def forward(self, x):
+        return x
+
+
 class BagNet(nn.Module):
 
     def __init__(self, block, layers, strides=[1, 2, 2, 2], kernel3=[0, 0, 0, 0], num_classes=1000, avg_pool=True):
@@ -75,7 +85,7 @@ class BagNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=strides[1], kernel3=kernel3[1], prefix='layer2')
         self.layer3 = self._make_layer(block, 256, layers[2], stride=strides[2], kernel3=kernel3[2], prefix='layer3')
         self.layer4 = self._make_layer(block, 512, layers[3], stride=strides[3], kernel3=kernel3[3], prefix='layer4')
-        self.avgpool = nn.AvgPool2d(1, stride=1)
+        self.avgpool = Identity()
         self.fc = nn.Linear(512 * block.expansion, num_classes)
         self.avg_pool = avg_pool
         self.block = block
@@ -120,6 +130,7 @@ class BagNet(nn.Module):
 
         if self.avg_pool:
             x = nn.AvgPool2d(x.size()[2], stride=1)(x)
+            x = self.avgpool(x)
             x = x.view(x.size(0), -1)
             x = self.fc(x)
         else:
